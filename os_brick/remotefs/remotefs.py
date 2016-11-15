@@ -43,6 +43,7 @@ class RemoteFsClient(executor.Executor):
             'cifs': 'smbfs',
             'glusterfs': 'glusterfs',
             'vzstorage': 'vzstorage',
+            'lustre': 'lustre',
             'quobyte': 'quobyte',
             'scality': 'scality'
         }

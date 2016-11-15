@@ -35,7 +35,7 @@ class RemoteFsConnector(base.BaseLinuxConnector):
         if conn:
             mount_point_base = conn.get('mount_point_base')
             if mount_type_lower in ('nfs', 'glusterfs', 'scality',
-                                    'quobyte', 'vzstorage'):
+                                    'quobyte', 'vzstorage', 'lustre'):
                 kwargs[mount_type_lower + '_mount_point_base'] = (
                     kwargs.get(mount_type_lower + '_mount_point_base') or
                     mount_point_base)

@@ -123,6 +123,9 @@ class RemoteFsClientTestCase(base.TestCase):
     def test_no_mount_point_vzstorage(self):
         self._test_no_mount_point('vzstorage')
 
+    def test_no_mount_point_lustre(self):
+        self._test_no_mount_point('lustre')
+
     def test_no_mount_point_quobyte(self):
         self._test_no_mount_point('quobyte')
 

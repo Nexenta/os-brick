@@ -234,6 +234,10 @@ class ConnectorTestCase(test_base.TestCase):
         self.assertEqual("RemoteFsConnector", obj.__class__.__name__)
 
         obj = connector.InitiatorConnector.factory(
+            'lustre', None, lustre_mount_point_base='/mnt/test')
+        self.assertEqual("RemoteFsConnector", obj.__class__.__name__)
+
+        obj = connector.InitiatorConnector.factory(
             'glusterfs', None, glusterfs_mount_point_base='/mnt/test',
             arch='x86_64')
         self.assertEqual("RemoteFsConnector", obj.__class__.__name__)

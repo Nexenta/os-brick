@@ -95,6 +95,8 @@ _connector_mapping_linux = {
         'os_brick.initiator.connectors.remotefs.RemoteFsConnector',
     initiator.VZSTORAGE:
         'os_brick.initiator.connectors.remotefs.RemoteFsConnector',
+    initiator.LUSTRE:
+        'os_brick.initiator.connectors.remotefs.RemoteFsConnector',
 
     initiator.ISCSI:
         'os_brick.initiator.connectors.iscsi.ISCSIConnector',
@@ -304,7 +306,7 @@ class InitiatorConnector(object):
         # set any special kwargs needed by connectors
         if protocol in (initiator.NFS, initiator.GLUSTERFS,
                         initiator.SCALITY, initiator.QUOBYTE,
-                        initiator.VZSTORAGE):
+                        initiator.VZSTORAGE, initiator.LUSTRE):
             kwargs.update({'mount_type': protocol.lower()})
         elif protocol == initiator.ISER:
             kwargs.update({'transport': 'iser'})
