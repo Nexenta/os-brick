@@ -12,12 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_concurrency import lockutils
 from oslo_log import log as logging
 
 from os_brick import initiator
 from os_brick.initiator.connectors import base
 from os_brick.remotefs import remotefs
 from os_brick import utils
+
+synchronized = lockutils.synchronized_with_prefix('os-brick-')
 
 LOG = logging.getLogger(__name__)
 
@@ -39,6 +42,12 @@ class RemoteFsConnector(base.BaseLinuxConnector):
                 kwargs[mount_type_lower + '_mount_point_base'] = (
                     kwargs.get(mount_type_lower + '_mount_point_base') or
                     mount_point_base)
+                data = conn.get('data')
+                if data:
+                    options = data.get('options')
+                    if options:
+                        kwargs[mount_type_lower + '_mount_options'] = (
+                            options.strip('-o '))
         else:
             LOG.warning("Connection details not present."
                         " RemoteFsClient may not initialize properly.")
@@ -86,6 +95,7 @@ class RemoteFsConnector(base.BaseLinuxConnector):
         return [path]
 
     @utils.trace
+    @synchronized('connect_volume')
     def connect_volume(self, connection_properties):
         """Ensure that the filesystem containing the volume is mounted.
 
@@ -105,9 +115,14 @@ class RemoteFsConnector(base.BaseLinuxConnector):
         return {'path': path}
 
     @utils.trace
+    @synchronized('disconnect_volume')
     def disconnect_volume(self, connection_properties, device_info,
                           force=False, ignore_errors=False):
-        """No need to do anything to disconnect a volume in a filesystem.
+        """Ensure that the file system containing the volume is unmounted.
+
+        The filesystem containing the volume is unmounted only if unmounting
+        was requested using the 'unmount' attribute with the value True
+        in the connection properties dictionary.
 
         :param connection_properties: The dictionary that describes all
                                       of the target volume attributes.
@@ -115,6 +130,13 @@ class RemoteFsConnector(base.BaseLinuxConnector):
         :param device_info: historical difference, but same as connection_props
         :type device_info: dict
         """
+        share = connection_properties.get('export')
+        unmount = connection_properties.get('unmount')
+        if not unmount:
+            LOG.debug('Unmount not requested for share %s', share)
+            return
+        self._remotefsclient.unmount(share, force=force,
+                                     ignore_errors=ignore_errors)
 
     def extend_volume(self, connection_properties):
         # TODO(walter-boring): is this possible?

@@ -107,13 +107,55 @@ class RemoteFsClient(executor.Executor):
             self._do_mount(self._mount_type, share, mount_path,
                            self._mount_options, flags)
 
+    def unmount(self, share, force=False, ignore_errors=False):
+        """Unmount given share."""
+        mount_path = self.get_mount_point(share)
+        LOG.debug('Unmounting %s share %s at %s',
+                  self._mount_type, share, mount_path)
+        if mount_path not in self._read_mounts():
+            LOG.debug('%s share %s is not mounted at %s',
+                      self._mount_type, share, mount_path)
+            return
+        options = ['umount', '--lazy']
+        if force:
+            options.append('--force')
+        options.append(mount_path)
+        run_as_root = True
+        check_exit_code = 0
+        if ignore_errors:
+            check_exit_code = False
+        try:
+            self._execute(*options,
+                          root_helper=self._root_helper,
+                          run_as_root=run_as_root,
+                          check_exit_code=check_exit_code)
+        except processutils.ProcessExecutionError as error:
+            if 'not mounted' in error.stderr:
+                LOG.debug('%s share %s is already unmounted at %s',
+                          self._mount_type, share, mount_path)
+            elif not ignore_errors:
+                raise
+        else:
+            LOG.debug('%s share %s has been unmounted at %s',
+                      self._mount_type, share, mount_path)
+        try:
+            self._execute('rm', '-d', mount_path,
+                          root_helper=self._root_helper,
+                          run_as_root=run_as_root,
+                          check_exit_code=check_exit_code)
+        except processutils.ProcessExecutionError as error:
+            LOG.error('Failed to remove mount point %s: %s',
+                      mount_path, error.stderr)
+        else:
+            LOG.debug('Mount point %s has been removed', mount_path)
+
     def _do_mount(self, mount_type, share, mount_path, mount_options=None,
                   flags=None):
         """Mounts share based on the specified params."""
         mnt_cmd = ['mount', '-t', mount_type]
         if mount_options is not None:
             mnt_cmd.extend(['-o', mount_options])
-        if flags is not None:
+        if flags is not None and mount_options not in flags:
             mnt_cmd.extend(flags)
         mnt_cmd.extend([share, mount_path])
 
